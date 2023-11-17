@@ -8,7 +8,7 @@ pub use fdcan;
 pub use fdcan::frame::{RxFrameInfo, TxFrameHeader, FrameFormat};
 pub use fdcan::id::{StandardId, ExtendedId, Id};
 pub use fdcan::{config, filter};
-use embassy_hal_common::{into_ref, PeripheralRef};
+use embassy_hal_internal::{into_ref, PeripheralRef};
 use fdcan::message_ram::RegisterBlock;
 use fdcan::LastErrorCode;
 
@@ -283,8 +283,7 @@ impl<'d, T: Instance> Fdcan<'d, T, fdcan::ConfigMode> {
         rx.set_as_af(rx.af_num(), AFType::Input);
         tx.set_as_af(tx.af_num(), AFType::OutputPushPull);
 
-        T::enable();
-        T::reset();
+        T::enable_and_reset();
         info!("can peripheral running at {}", T::frequency());
 
         rx.set_as_af(rx.af_num(), AFType::Input);
@@ -736,8 +735,9 @@ macro_rules! impl_fdcan {
 
 foreach_peripheral!(
     (can, FDCAN) => { impl_fdcan!(FDCAN, 0x4000_ac00, 0x0000); };
-    (can, FDCAN1) => { impl_fdcan!(FDCAN1, 0x4000_ac00, 0x0000); };
-    (can, FDCAN2) => { impl_fdcan!(FDCAN2, 0x4000_ac00, 0x1000); };
+    (can, FDCAN1) => { impl_fdcan!(FDCAN1, 0x4000_a400, 0x0000); };
+    (can, FDCAN2) => { impl_fdcan!(FDCAN2, 0x4000_a800, 0x0000); };
+    (can, FDCAN3) => { impl_fdcan!(FDCAN3, 0x4000_ac00, 0x0000); };
 );
 
 // hack stolen from similar situation in DAC
@@ -745,39 +745,65 @@ foreach_peripheral!(
 // H7 uses single bit for both FDCAN1 and FDCAN2, this is a hack until a proper fix is implemented
 // NOTE: disabling either FDCAN will affect the other!
 
-#[cfg(rcc_h7)]
+#[cfg(any(
+    rcc_g4,
+    rcc_h7
+))]
 impl crate::rcc::sealed::RccPeripheral for peripherals::FDCAN2 {
     /// NOTE: disabling either FDCAN will affect the other!
     fn frequency() -> crate::time::Hertz {
-        critical_section::with(|_| unsafe { crate::rcc::get_freqs().apb1 })
+        // TODO: Is the critical section needed here??
+        critical_section::with(|_| unsafe { crate::rcc::get_freqs().pclk1 })
     }
 
     /// NOTE: disabling either FDCAN will affect the other!
-    fn reset() {
-        critical_section::with(|_| {
-            crate::pac::RCC.apb1hrstr().modify(|w| w.set_fdcanrst(true));
-            crate::pac::RCC.apb1hrstr().modify(|w| w.set_fdcanrst(false));
-        })
+    fn enable_and_reset_with_cs(_cs: critical_section::CriticalSection) {
+        crate::pac::RCC.apb1rstr1().modify(|w| w.set_fdcanrst(true));
+        crate::pac::RCC.apb1rstr1().modify(|w| w.set_fdcanrst(false));
+        crate::pac::RCC.apb1enr1().modify(|w| w.set_fdcanen(true));
     }
 
     /// NOTE: disabling either FDCAN will affect the other!
-    fn enable() {
-        critical_section::with(|_| {
-            crate::pac::RCC.apb1henr().modify(|w| w.set_fdcanen(true));
-        })
-    }
-
-    /// NOTE: disabling either FDCAN will affect the other!
-    fn disable() {
-        critical_section::with(|_| {
-            crate::pac::RCC.apb1henr().modify(|w| w.set_fdcanen(false))
-        })
+    fn disable_with_cs(_cs: critical_section::CriticalSection) {
+        crate::pac::RCC.apb1enr1().modify(|w| w.set_fdcanen(false))
     }
 }
 
-#[cfg(rcc_h7)]
+#[cfg(any(
+    rcc_g4,
+    rcc_h7
+))]
 impl crate::rcc::RccPeripheral for peripherals::FDCAN2 {}
 
+// TODO: Macro this thing across both FDCAN2 and FDCAN3
+#[cfg(any(
+    rcc_g4,
+    rcc_h7
+))]
+impl crate::rcc::sealed::RccPeripheral for peripherals::FDCAN3 {
+    /// NOTE: disabling either FDCAN will affect the other!
+    fn frequency() -> crate::time::Hertz {
+        critical_section::with(|_| unsafe { crate::rcc::get_freqs().pclk1 })
+    }
+
+    /// NOTE: disabling either FDCAN will affect the other!
+    fn enable_and_reset_with_cs(_cs: critical_section::CriticalSection) {
+        crate::pac::RCC.apb1rstr1().modify(|w| w.set_fdcanrst(true));
+        crate::pac::RCC.apb1rstr1().modify(|w| w.set_fdcanrst(false));
+        crate::pac::RCC.apb1enr1().modify(|w| w.set_fdcanen(true));
+    }
+
+    /// NOTE: disabling either FDCAN will affect the other!
+    fn disable_with_cs(_cs: critical_section::CriticalSection) {
+        crate::pac::RCC.apb1enr1().modify(|w| w.set_fdcanen(false))
+    }
+}
+
+#[cfg(any(
+    rcc_g4,
+    rcc_h7
+))]
+impl crate::rcc::RccPeripheral for peripherals::FDCAN3 {}
 
 pin_trait!(RxPin, Instance);
 pin_trait!(TxPin, Instance);
