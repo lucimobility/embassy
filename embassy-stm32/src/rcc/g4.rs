@@ -3,8 +3,14 @@ use stm32_metapac::rcc::vals::{Adcsel, Pllsrc, Sw};
 use stm32_metapac::FLASH;
 
 pub use crate::pac::rcc::vals::{
-    Adcsel as AdcClockSource, Hpre as AHBPrescaler, Pllm as PllM, Plln as PllN, Pllp as PllP, Pllq as PllQ,
-    Pllr as PllR, Ppre as APBPrescaler,
+    Adcsel as AdcClockSource,
+    Hpre as AHBPrescaler,
+    Pllm as PllM,
+    Plln as PllN,
+    Pllp as PllP,
+    Pllq as PllQ,
+    Pllr as PllR,
+    Ppre as APBPrescaler, // Canfdsel as CanfdClockSource,
 };
 use crate::pac::{PWR, RCC};
 use crate::rcc::{set_freqs, Clocks};
@@ -88,6 +94,8 @@ pub struct Config {
     pub adc12_clock_source: AdcClockSource,
     pub adc345_clock_source: AdcClockSource,
 
+    // TODO: Add can clock source once enum is added to PAC
+    // pub canfc_src: CanfdClockSource,
     pub ls: super::LsConfig,
 }
 
@@ -314,6 +322,8 @@ pub(crate) unsafe fn init(config: Config) {
         pclk2_tim: apb2_tim_freq,
         adc: adc12_ck,
         adc34: adc345_ck,
+        // TODO: Actually calculate this based on the config
+        canfd: Some(Hertz(8_000_000)),
         pll1_p: None,
         rtc,
     });

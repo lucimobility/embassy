@@ -117,7 +117,7 @@ pub struct Clocks {
     #[cfg(rcc_l4)]
     pub pllsai2_p: Option<Hertz>,
 
-    #[cfg(any(stm32g4, rcc_l4))]
+    #[cfg(any(rcc_g4, rcc_l4))]
     pub pll1_p: Option<Hertz>,
     #[cfg(any(stm32h5, stm32h7, rcc_f2, rcc_f4, rcc_f410, rcc_f7, rcc_l4))]
     pub pll1_q: Option<Hertz>,
@@ -150,6 +150,9 @@ pub struct Clocks {
 
     #[cfg(any(rcc_f3, rcc_g4))]
     pub adc34: Option<Hertz>,
+
+    #[cfg(any(rcc_g4))]
+    pub canfd: Option<Hertz>,
 
     #[cfg(stm32f334)]
     pub hrtim: Option<Hertz>,
