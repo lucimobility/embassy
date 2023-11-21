@@ -481,6 +481,8 @@ fn main() {
             let en_reg = format_ident!("{}", en.register);
             let set_en_field = format_ident!("set_{}", en.field);
 
+            println!("processing {}", p.name);
+
             let (before_enable, before_disable) = if refcounted_peripherals.contains(ptype) {
                 let refcount_static =
                     format_ident!("{}_{}", en.register.to_ascii_uppercase(), en.field.to_ascii_uppercase());

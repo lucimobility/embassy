@@ -15,6 +15,8 @@ use crate::rcc::RccPeripheral;
 use crate::time::Hertz;
 use crate::{interrupt, peripherals, Peripheral};
 
+use super::calc_bit_timings;
+
 /// Contains CAN frame and additional metadata.
 ///
 /// Timestamp is available if `time` feature is enabled.
