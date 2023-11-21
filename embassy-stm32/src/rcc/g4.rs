@@ -291,6 +291,8 @@ pub(crate) unsafe fn init(config: Config) {
     RCC.ccipr().modify(|w| w.set_adc12sel(config.adc12_clock_source));
     RCC.ccipr().modify(|w| w.set_adc345sel(config.adc345_clock_source));
 
+    RCC.ccipr().modify(|w| w.set_fdcansel(2));
+
     let adc12_ck = match config.adc12_clock_source {
         AdcClockSource::DISABLE => None,
         AdcClockSource::PLL1_P => pll_freq.as_ref().unwrap().pll_p,
@@ -323,7 +325,7 @@ pub(crate) unsafe fn init(config: Config) {
         adc: adc12_ck,
         adc34: adc345_ck,
         // TODO: Actually calculate this based on the config
-        canfd: Some(Hertz(8_000_000)),
+        canfd: Some(apb1_freq),
         pll1_p: None,
         rtc,
     });
