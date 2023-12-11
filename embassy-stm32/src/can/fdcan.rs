@@ -18,6 +18,8 @@ use crate::interrupt::typelevel::Interrupt;
 use crate::rcc::RccPeripheral;
 use crate::{interrupt, peripherals, Peripheral};
 
+use defmt::Format;
+
 // as far as I can tell, embedded-hal/can doesn't have any fdcan frame support
 pub struct RxFrame {
     pub header: RxFrameInfo,
@@ -194,7 +196,7 @@ impl<T: Instance> interrupt::typelevel::Handler<T::IT1Interrupt> for IT1Interrup
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Format)]
 pub enum BusError {
     Stuff,
     Form,
