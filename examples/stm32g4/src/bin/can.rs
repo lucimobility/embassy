@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
+// #![feature(type_alias_impl_trait)]
 
 use defmt::*;
 use embassy_executor::Spawner;
@@ -65,7 +65,6 @@ async fn main(_spawner: Spawner) {
         .unwrap();
         info!("Writing frame");
         _ = can.write(&frame).await;
-
 
         match can.read().await {
             Ok(rx_frame) => info!("Rx: {}", rx_frame.data()[0]),
