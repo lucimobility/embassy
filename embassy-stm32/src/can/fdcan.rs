@@ -183,7 +183,7 @@ impl<'d> CanConfigurator<'d> {
             + 'd,
     ) -> CanConfigurator<'d> {
         rx.set_as_af(rx.af_num(), AfType::input(Pull::None));
-        tx.set_as_af(tx.af_num(), AfType::output(OutputType::PushPull, Speed::VeryHigh));
+        tx.set_as_af(tx.af_num(), AfType::output(OutputType::PushPull, Speed::Low));
 
         rcc::enable_and_reset::<T>();
 
@@ -192,7 +192,7 @@ impl<'d> CanConfigurator<'d> {
         T::registers().into_config_mode(config);
 
         rx.set_as_af(rx.af_num(), AfType::input(Pull::None));
-        tx.set_as_af(tx.af_num(), AfType::output(OutputType::PushPull, Speed::VeryHigh));
+        tx.set_as_af(tx.af_num(), AfType::output(OutputType::PushPull, Speed::Low));
 
         unsafe {
             T::IT0Interrupt::unpend(); // Not unsafe
