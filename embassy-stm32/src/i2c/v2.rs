@@ -698,7 +698,7 @@ impl<'d, IM: MasterMode> I2c<'d, Async, IM> {
             self.write_internal(address.into(), write, true, timeout)
         } else {
             timeout
-                .with(self.write_dma_internal(address.into(), write, true, true, timeout))
+                .with(self.write_dma_internal(address.into(), write, true, true, true, timeout))
                 .await
         }
     }
@@ -747,7 +747,7 @@ impl<'d, IM: MasterMode> I2c<'d, Async, IM> {
         if write.is_empty() {
             self.write_internal(address.into(), write, false, timeout)?;
         } else {
-            let fut = self.write_dma_internal(address.into(), write, true, true, timeout);
+            let fut = self.write_dma_internal(address.into(), write, true, true, false, timeout);
             timeout.with(fut).await?;
         }
 
