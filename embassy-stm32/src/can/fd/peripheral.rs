@@ -71,11 +71,28 @@ impl Registers {
         }
     }
 
+    #[cfg(feature = "time")]
+    pub fn calc_timestamp(&self, ns_per_timer_tick: u64, ts_val: u16) -> Timestamp {
+        let now_embassy = embassy_time::Instant::now();
+        if ns_per_timer_tick == 0 {
+            return now_embassy;
+        }
+        let cantime = { self.regs.tscv().read().tsc() };
+        let delta = cantime.overflowing_sub(ts_val).0 as u64;
+        let ns = ns_per_timer_tick * delta as u64;
+        now_embassy - embassy_time::Duration::from_nanos(ns)
+    }
+
+    #[cfg(not(feature = "time"))]
+    pub fn calc_timestamp(&self, _ns_per_timer_tick: u64, ts_val: u16) -> Timestamp {
+        ts_val
+    }
+
     pub fn put_tx_frame(&self, bufidx: usize, header: &Header, buffer: &[u8]) {
         let mailbox = self.tx_buffer_element(bufidx);
         mailbox.reset();
         put_tx_header(mailbox, header);
-        put_tx_data(mailbox, &buffer[..header.len() as usize]);
+        put_tx_data(mailbox, buffer);
 
         // Set <idx as Mailbox> as ready to transmit
         self.regs.txbar().modify(|w| w.set_ar(bufidx, true));
@@ -96,12 +113,17 @@ impl Registers {
     }
 
     pub fn curr_error(&self) -> Option<BusError> {
-        let err = { self.regs.psr().read() };
+        let err = self.regs.psr().read();
+        let ir = self.regs.ir().read();
         if err.bo() {
+            // TODO: This error probably needs to be handled differently since the CAN module goes to init when it occurs.
+            // The IR register is cleared in the ISR for this as well so we can't check it here.
             return Some(BusError::BusOff);
-        } else if err.ep() {
+        } else if err.ep() && ir.ep() {
+            self.regs.ir().modify(|w| w.set_ep(true));
             return Some(BusError::BusPassive);
-        } else if err.ew() {
+        } else if err.ew() && ir.ew() {
+            self.regs.ir().modify(|w| w.set_ew(true));
             return Some(BusError::BusWarning);
         } else {
             cfg_if! {
@@ -190,7 +212,7 @@ impl Registers {
                 DataLength::Fdcan(len) => len,
                 DataLength::Classic(len) => len,
             };
-            if len as usize > ClassicData::MAX_DATA_LEN {
+            if len as usize > 8 {
                 return None;
             }
 
