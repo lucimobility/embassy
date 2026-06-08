@@ -433,7 +433,17 @@ impl<'d, T: Instance<Regs = crate::pac::adc::Adc>> Adc<'d, T> {
 
     pub fn new_with_config(adc: Peri<'d, T>, config: AdcConfig) -> Self {
         #[cfg(not(adc_g0))]
-        let s = Self::new(adc);
+        let s = {
+            Self::init_regulator();
+            // Configure the prescaler before running the calibration
+            if let Some(prescaler) = config.prescaler {
+                T::common_regs().ccr().modify(|w| w.set_presc(prescaler));
+            }
+
+            Self::init_calibrate();
+
+            Self { adc }
+        };
 
         #[cfg(adc_g0)]
         let s = match config.clock {
@@ -468,10 +478,6 @@ impl<'d, T: Instance<Regs = crate::pac::adc::Adc>> Adc<'d, T> {
             T::regs().cfgr().modify(|reg| reg.set_res(resolution.into()));
             #[cfg(any(adc_g0, adc_u0))]
             T::regs().cfgr1().modify(|reg| reg.set_res(resolution.into()));
-        }
-
-        if let Some(prescaler) = config.prescaler {
-            T::common_regs().ccr().modify(|w| w.set_presc(prescaler));
         }
 
         if let Some(averaging) = config.averaging {
