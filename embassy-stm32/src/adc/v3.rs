@@ -7,7 +7,9 @@ use pac::adc::vals::Dmacfg;
 #[cfg(adc_v3)]
 use pac::adc::vals::{OversamplingRatio, OversamplingShift, Rovsm, Trovs};
 #[cfg(adc_g0)]
-pub use pac::adc::vals::{Ovsr, Ovss, Presc};
+pub use pac::adc::vals::{Ovsr, Ovss};
+#[cfg(adc_h5)]
+use pac::adccommon::vals::Presc;
 
 #[allow(unused_imports)]
 use super::SealedAdcChannel;
@@ -142,6 +144,9 @@ pub struct AdcConfig {
     pub oversampling_mode: Option<(Rovsm, Trovs, bool)>,
     #[cfg(adc_g0)]
     pub clock: Option<Clock>,
+    #[cfg(any(adc_h5, adc_h7rs, adc_v3))]
+    /// Clock prescaler for the ker_ck_input clock
+    pub prescaler: Option<Presc>,
     pub resolution: Option<Resolution>,
     pub averaging: Option<Averaging>,
 }
@@ -463,6 +468,10 @@ impl<'d, T: Instance<Regs = crate::pac::adc::Adc>> Adc<'d, T> {
             T::regs().cfgr().modify(|reg| reg.set_res(resolution.into()));
             #[cfg(any(adc_g0, adc_u0))]
             T::regs().cfgr1().modify(|reg| reg.set_res(resolution.into()));
+        }
+
+        if let Some(prescaler) = config.prescaler {
+            T::common_regs().ccr().modify(|w| w.set_presc(prescaler));
         }
 
         if let Some(averaging) = config.averaging {
