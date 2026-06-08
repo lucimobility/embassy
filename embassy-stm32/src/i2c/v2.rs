@@ -844,6 +844,18 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
 
         Ok(())
     }
+
+    /// Resets the I2C peripheral. This can be used to recover from a spurious start condition that leaves the BUSY flag set.
+    ///
+    /// This resets the peripheral by toggling the PE bit.
+    pub fn reset(&mut self) {
+        self.info.regs.cr1().modify(|w| w.set_pe(false));
+
+        // PE must be cleared for at least 3 APB clock cycles before setting it again, so read back the
+        // register to ensure enough time has passed
+        let _ = self.info.regs.cr1().read();
+        self.info.regs.cr1().modify(|w| w.set_pe(true));
+    }
 }
 
 impl<'d, IM: MasterMode> I2c<'d, Async, IM> {
