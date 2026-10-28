@@ -11,6 +11,8 @@ use super::{ClockError, Clocks, PoweredClock, WakeGuard};
 use crate::clocks::VddLevel;
 #[cfg(feature = "_mcxa5xx")]
 use crate::pac::mrcc::FlexspiClkselMux;
+#[cfg(feature = "_mcxa2xx")]
+use crate::pac::mrcc::UsbClkselMux;
 #[cfg(feature = "_mcxa5xx")]
 use crate::pac::mrcc::WwdtClkselMux;
 use crate::pac::mrcc::{
@@ -2045,6 +2047,68 @@ impl SPConfHelper for CanConfig {
             return Err(ClockError::BadConfig {
                 clock: "flexcan fclk",
                 reason: "exceeds max rating",
+            });
+        }
+
+        apply_div4!(self, clksel, clkdiv, variant, freq)
+    }
+}
+
+//
+// USB
+//
+
+/// Selectable clocks for the `USB0` full-speed controller.
+///
+/// The controller requires a 48MHz functional clock after division.
+#[cfg(feature = "_mcxa2xx")]
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
+pub enum UsbClockSel {
+    /// PLL1 clock output ("pll1_clk").
+    Pll1Clk,
+    /// SOSC/XTAL/EXTAL external clock source.
+    #[cfg(not(feature = "sosc-as-gpio"))]
+    ClkIn,
+}
+
+/// Top level configuration for the `USB0` instance.
+#[cfg(feature = "_mcxa2xx")]
+pub struct UsbConfig {
+    /// Power state required for this peripheral
+    pub power: PoweredClock,
+    /// Clock source
+    pub source: UsbClockSel,
+    /// Clock divisor
+    pub div: Div4,
+}
+
+#[cfg(feature = "_mcxa2xx")]
+impl SPConfHelper for UsbConfig {
+    fn pre_enable_config(&self, clocks: &Clocks) -> Result<PreEnableParts, ClockError> {
+        let mrcc0 = crate::pac::MRCC0;
+        let clksel = mrcc0.mrcc_usb0_clksel();
+        let clkdiv = mrcc0.mrcc_usb0_clkdiv();
+
+        let (freq, variant) = match self.source {
+            UsbClockSel::Pll1Clk => (clocks.ensure_pll1_clk_active(&self.power)?, UsbClkselMux::ClkrootSpll),
+            #[cfg(not(feature = "sosc-as-gpio"))]
+            UsbClockSel::ClkIn => (clocks.ensure_clk_in_active(&self.power)?, UsbClkselMux::ClkrootSosc),
+        };
+
+        if freq / self.div.into_divisor() != 48_000_000 || freq % self.div.into_divisor() != 0 {
+            return Err(ClockError::BadConfig {
+                clock: "usb0 fclk",
+                reason: "must be exactly 48MHz",
+            });
+        }
+
+        // MCXA2xx 36.3.1 (Table 204): BUS_CLK, which is SYSTEM_CLK / 2, must exceed 24MHz.
+        if clocks.ensure_cpu_system_clk_active(&self.power)? / 2 <= 24_000_000 {
+            return Err(ClockError::BadConfig {
+                clock: "usb0 bus clock",
+                reason: "BUS_CLK must exceed 24MHz",
             });
         }
 

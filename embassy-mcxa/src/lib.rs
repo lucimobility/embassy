@@ -43,6 +43,8 @@ pub mod ctimer;
 pub mod dac;
 #[cfg(mcxa_dma)]
 pub mod dma;
+#[cfg(mcxa_eqdc)]
+pub mod eqdc;
 #[cfg(feature = "executor-platform")]
 pub mod executor;
 #[cfg(mcxa_can)]
@@ -80,6 +82,8 @@ pub mod sgi;
 pub mod spi;
 #[cfg(mcxa_trng)]
 pub mod trng;
+#[cfg(all(mcxa_usb, feature = "_mcxa2xx"))]
+pub mod usb;
 #[cfg(mcxa_wwdt)]
 pub mod wwdt;
 

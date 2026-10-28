@@ -231,6 +231,7 @@ fn generate_instance_calls() -> TokenStream {
 
     const REQUIRES_INSTANCE: &[&str] = &[
         "adc", "crc", "dac", "gpio", "trng", "wwdt", "ctimer", "lpi2c", "i3c", "lpuart", "lpspi", "flexspi", "can",
+        "eqdc", "usb",
     ];
 
     for peripheral in METADATA.peripherals {

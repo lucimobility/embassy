@@ -96,6 +96,7 @@ embassy-embedded-hal = { version = "0.6.0", path = "../embassy-embedded-hal" }
 embassy-futures = { version = "0.1.2", path = "../embassy-futures" }
 embassy-hal-internal = { version = "0.5.0", path = "../embassy-hal-internal", features = ["cortex-m", "prio-bits-3"] }
 embassy-sync = { version = "0.8.0", path = "../embassy-sync" }
+embassy-usb-driver = { version = "0.2.2", path = "../embassy-usb-driver" }
 embedded-hal-02 = { package = "embedded-hal", version = "0.2.6", features = ["unproven"] }
 embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
 embedded-hal-async = { version = "1.0" }
@@ -117,13 +118,13 @@ embassy-time-queue-utils = { version = "0.3.2", path = "../embassy-time-queue-ut
 grounded = { version = "0.2.1", features = ["cas", "critical-section"] }
 maitake-sync = { version = "0.3.0", default-features = false, features = ["critical-section", "no-cache-pad"] }
 nb = "1.1.0"
-nxp-pac = { git = "https://github.com/embassy-rs/nxp-pac.git", rev = "6a4c80de6e0efcbdea813743e584a70bcc998d1c", features = ["rt"] }
+nxp-pac = { git = "https://github.com/lucimobility/nxp-pac.git", rev = "55b83618281798dbb867ba57d03776e17f87952b", features = ["rt"] }
 paste = "1.0.15"
 
 rand-core-10 = { package = "rand_core", version = "0.10" }
 
 [build-dependencies]
-nxp-pac = { git = "https://github.com/embassy-rs/nxp-pac.git", rev = "6a4c80de6e0efcbdea813743e584a70bcc998d1c", default-features = false, features = ["metadata"] }
+nxp-pac = { git = "https://github.com/lucimobility/nxp-pac.git", rev = "55b83618281798dbb867ba57d03776e17f87952b", default-features = false, features = ["metadata"] }
 proc-macro2 = "1.0.106"
 quote = "1.0.45"
 convert_case = "0.12"
@@ -142,7 +143,7 @@ time-driver-lptmr = ["rt"]
 
 # Base defmt feature enables core + panic handler
 # Use with one logger feature: defmt-rtt (preferred) or defmt-uart (fallback)
-defmt = ["dep:defmt", "nxp-pac/defmt"]
+defmt = ["dep:defmt", "nxp-pac/defmt", "embassy-usb-driver/defmt"]
 
 # Enable optional embedded-mcu-hal traits
 embedded-mcu-hal = ["dep:embedded-mcu-hal"]
