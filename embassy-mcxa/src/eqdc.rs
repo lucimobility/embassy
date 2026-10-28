@@ -124,6 +124,12 @@ impl<'d> Eqdc<'d> {
         regs.ctrl2().write(|_| {});
         regs.ctrl().write(|w| w.set_rev(config.reverse));
 
+        // The position counter always counts modulo UMOD:LMOD, which resets
+        // to 0 and would hold the position at UINIT:LINIT. Use the full range
+        // so it wraps like a 32-bit counter. Loaded by LDOK in set_position().
+        regs.umod().write(|w| w.set_mod_(0xFFFF));
+        regs.lmod().write(|w| w.set_mod_(0xFFFF));
+
         let mut eqdc = Self {
             regs,
             _phantom: PhantomData,
