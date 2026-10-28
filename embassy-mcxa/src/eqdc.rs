@@ -135,6 +135,8 @@ impl<'d> Eqdc<'d> {
             _phantom: PhantomData,
         };
         eqdc.set_position(0);
+        // Discard a phase error latched while the inputs were being set up.
+        eqdc.take_phase_error();
         Ok(eqdc)
     }
 
@@ -163,6 +165,22 @@ impl<'d> Eqdc<'d> {
     /// Number of index pulses seen, counted up or down with direction.
     pub fn revolutions(&self) -> i16 {
         self.regs.rev().read().rev() as i16
+    }
+
+    /// Returns whether phase A and phase B changed simultaneously since the
+    /// last call, and clears the flag.
+    ///
+    /// A valid quadrature signal never changes both phases at once, so this
+    /// indicates lost counts, e.g. from noise or an encoder that stops
+    /// driving its outputs when it loses signal.
+    pub fn take_phase_error(&mut self) -> bool {
+        let error = self.regs.intctrl().read().sabirq();
+        if error {
+            // Interrupt request flags are write 1 to clear. No interrupts are
+            // enabled by this driver, so the enable bits can be written as 0.
+            self.regs.intctrl().write(|w| w.set_sabirq(true));
+        }
+        error
     }
 
     /// Filtered input levels, useful for checking the encoder wiring.
